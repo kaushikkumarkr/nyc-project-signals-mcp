@@ -68,7 +68,7 @@ def refresh_if_stale(database=DB, max_age_hours=24):
         return {'refreshed': False, 'reason': 'refresh lock unavailable'}
 
 
-def build_server(database=DB) -> FastMCP:
+def build_server(database=DB, auto_refresh=True) -> FastMCP:
     mcp = FastMCP(
         'NYC Project Signals',
         instructions=(
@@ -79,6 +79,8 @@ def build_server(database=DB) -> FastMCP:
     )
 
     def projects():
+        if auto_refresh:
+            refresh_if_stale(database)
         conn = connect(database)
         try:
             return load_projects(conn)
@@ -117,6 +119,8 @@ def build_server(database=DB) -> FastMCP:
     @mcp.tool()
     def list_sources() -> dict:
         """List source datasets, freshness, row limits, and known collection gaps."""
+        if auto_refresh:
+            refresh_if_stale(database)
         conn = connect(database)
         try:
             return get_state(conn)
@@ -126,6 +130,8 @@ def build_server(database=DB) -> FastMCP:
     @mcp.tool()
     def refresh_status() -> dict:
         """Show source freshness and whether the next startup will refresh public data."""
+        if auto_refresh:
+            refresh_if_stale(database)
         conn = connect(database)
         try:
             states = get_state(conn)
@@ -143,6 +149,8 @@ def build_server(database=DB) -> FastMCP:
     @mcp.tool()
     def quality_status() -> dict:
         """Return measured quality gates; unmeasured accuracy remains null."""
+        if auto_refresh:
+            refresh_if_stale(database)
         conn = connect(database)
         try:
             return report(conn)
@@ -173,7 +181,7 @@ def build_server(database=DB) -> FastMCP:
 def run(database=DB, transport='stdio', host='127.0.0.1', port=8000, auto_refresh=True):
     if auto_refresh:
         refresh_if_stale(database)
-    server = build_server(database)
+    server = build_server(database, auto_refresh=auto_refresh)
     if transport == 'stdio':
         server.run(transport='stdio')
     elif transport in ('streamable-http', 'sse'):
