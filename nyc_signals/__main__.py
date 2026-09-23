@@ -22,6 +22,7 @@ def main():
     p=subs.add_parser('serve');p.add_argument('--port',type=int,default=8765)
     p=subs.add_parser('mcp');p.add_argument('--transport',choices=['stdio','streamable-http','sse'],default='stdio')
     p.add_argument('--host',default='127.0.0.1');p.add_argument('--port',type=int,default=8000)
+    p.add_argument('--no-refresh',action='store_true',help='Do not refresh public sources when data is older than 24 hours')
     subs.add_parser('rebuild')
     args=parser.parse_args()
     if args.command=='serve':
@@ -29,7 +30,7 @@ def main():
         serve(args.db,args.port);return
     if args.command=='mcp':
         from .mcp_server import run
-        run(args.db,args.transport,args.host,args.port);return
+        run(args.db,args.transport,args.host,args.port,not args.no_refresh);return
     conn=connect(args.db)
     try:
         if args.command=='ingest':

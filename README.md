@@ -120,4 +120,4 @@ Configure a local MCP client to launch the command with the repository as its wo
 }
 ```
 
-Tools are `search_leads`, `get_project`, `list_sources`, `quality_status`, and `export_leads`. They return official source URLs and limitations. The stdio server is local and free. `--transport streamable-http` is available for a hosted deployment, but do not expose it publicly without authentication, rate limiting, tenant isolation, and a terms/privacy review.
+Tools are `search_leads`, `get_project`, `list_sources`, `refresh_status`, `quality_status`, and `export_leads`. They return official source URLs and limitations. On startup, stdio refreshes the public NYC sources when the local database is missing or older than 24 hours; use `--no-refresh` or `NYC_SIGNALS_NO_AUTO_REFRESH=1` to disable this. The refresh is bounded to the configured 90-day window and never calls Azure inference. The stdio server is local and free. `--transport streamable-http` is available for a hosted deployment, but do not expose it publicly without authentication, rate limiting, tenant isolation, and a terms/privacy review.
