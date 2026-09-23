@@ -13,6 +13,7 @@ import json
 import os
 import sys
 import time
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -92,6 +93,7 @@ def build_server(database=DB, auto_refresh=True) -> FastMCP:
         query: str = '',
         feed: str = 'all',
         borough: str = 'all',
+        service: str = 'all',
         priority: str = 'high',
         since: str = '',
         limit: int = 20,
@@ -102,13 +104,64 @@ def build_server(database=DB, auto_refresh=True) -> FastMCP:
         Dates must be YYYY-MM-DD. Results include official source URLs and limitations.
         """
         limit = min(max(int(limit), 1), 50)
-        params = {'q': query, 'feed': feed, 'borough': borough, 'priority': priority, 'since': since}
+        params = {'q': query, 'feed': feed, 'borough': borough, 'service': service, 'priority': priority, 'since': since}
         matches = filtered(projects(), params)
         return {
             'purpose': 'Evidence-prioritized research candidates; verify before outreach.',
             'total': len(matches),
             'results': matches[:limit],
         }
+
+    @mcp.tool()
+    def lead_digest(
+        service: str = 'all',
+        borough: str = 'all',
+        since: str = '',
+    ) -> dict:
+        """Summarize high-priority candidates for a territory or service category."""
+        matches = filtered(projects(), {'feed': 'all', 'borough': borough, 'service': service,
+                                        'priority': 'high', 'since': since})
+        return {
+            'purpose': 'A compact research queue summary; counts are not sales forecasts.',
+            'filters': {'service': service, 'borough': borough, 'since': since},
+            'high_priority_candidates': len(matches),
+            'by_feed': dict(Counter(feed for p in matches for feed in p.get('feeds', []))),
+            'by_borough': dict(Counter(p.get('borough') or 'Unknown' for p in matches)),
+            'by_service': dict(Counter(trade for p in matches for trade in p.get('trades', []))),
+            'top_candidates': matches[:10],
+        }
+
+    @mcp.tool()
+    def workflow_playbook(service: str) -> dict:
+        """Return a safe next-step workflow for a service category; no messages are sent."""
+        key = service.strip().casefold()
+        playbooks = {
+            'restaurant equipment': {
+                'match_rule': 'Restaurant activity with explicit fit-out, kitchen, or new-use language.',
+                'verify': ['Confirm the official filing is current.', 'Check whether the venue is existing or proposed.', 'Find a public business website before outreach.'],
+                'automation': ['Create a CRM research task.', 'Attach the official source URL.', 'Assign territory and review status.'],
+            },
+            'commercial cleaning': {
+                'match_rule': 'Commercial or restaurant renovation activity with a recent source event.',
+                'verify': ['Confirm project status and address.', 'Check project scale from property context where available.', 'Avoid treating a permit as a contract award.'],
+                'automation': ['Create a qualified research task.', 'Route by borough.', 'Require human approval before outreach.'],
+            },
+            'signage': {
+                'match_rule': 'Source description explicitly mentions signage or an illuminated business sign.',
+                'verify': ['Confirm the sign record is current.', 'Check whether it is a new tenant or replacement sign.', 'Use only public business contact channels.'],
+                'automation': ['Create a signage opportunity task.', 'Attach the source record.', 'Queue for human review.'],
+            },
+            'building services': {
+                'match_rule': 'Building activity with explicit installation, replacement, or renovation language.',
+                'verify': ['Identify the work type and latest status.', 'Separate routine maintenance from expansion or fit-out.', 'Confirm the buyer role before outreach.'],
+                'automation': ['Create a research task.', 'Tag the service category.', 'Do not auto-send a sales message.'],
+            },
+        }
+        return {'service': service, 'playbook': playbooks.get(key, {
+            'match_rule': 'Use search_leads with a service, feed, borough, and since filter.',
+            'verify': ['Confirm the official record and current status.', 'Treat the result as a candidate, not a confirmed buyer.'],
+            'automation': ['Export or create a human-reviewed CRM task; no outbound message is sent by this server.'],
+        })}
 
     @mcp.tool()
     def get_project(project_id: str) -> dict:
@@ -162,13 +215,14 @@ def build_server(database=DB, auto_refresh=True) -> FastMCP:
         query: str = '',
         feed: str = 'all',
         borough: str = 'all',
+        service: str = 'all',
         priority: str = 'high',
         since: str = '',
         limit: int = 200,
     ) -> dict:
         """Return a bounded CSV export for downstream CRM or automation testing."""
         limit = min(max(int(limit), 1), 500)
-        matches = filtered(projects(), {'q': query, 'feed': feed, 'borough': borough,
+        matches = filtered(projects(), {'q': query, 'feed': feed, 'borough': borough, 'service': service,
                                         'priority': priority, 'since': since})[:limit]
         stream = io.StringIO(newline='')
         write_csv(matches, stream)

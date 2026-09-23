@@ -240,7 +240,7 @@ def load_projects(conn):
 
 def filtered(projects, params):
     search=text(params.get('q','')).casefold()
-    feed=params.get('feed','all');boro=params.get('borough','all');review=params.get('review','all');priority=params.get('priority','all')
+    feed=params.get('feed','all');boro=params.get('borough','all');review=params.get('review','all');priority=params.get('priority','all');service=text(params.get('service','all')).casefold()
     since=params.get('since','');until=params.get('until','')
     items=[]
     for p in projects:
@@ -248,6 +248,7 @@ def filtered(projects, params):
         if boro!='all' and boro!=p['borough']:continue
         if review!='all' and review!=p['review_status']:continue
         if priority!='all' and priority!=p.get('priority_band','low'):continue
+        if service!='all' and service not in {text(t).casefold() for t in p.get('trades',[])}:continue
         if since and p['latest_date']<since:continue
         if until and p['latest_date']>until:continue
         if search and search not in (p['address']+' '+p['description']+' '+p['job']+' '+' '.join(x['name'] for x in p['businesses'])).casefold():continue

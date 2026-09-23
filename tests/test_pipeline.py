@@ -93,6 +93,7 @@ class PipelineTests(unittest.TestCase):
         projects=load_projects(self.conn)
         self.assertEqual(len(filtered(projects,{'feed':'restaurant','borough':'Manhattan','q':'broadway'})),1)
         self.assertEqual(len(filtered(projects,{'borough':'Queens'})),0)
+        self.assertEqual(len(filtered(projects,{'service':'Restaurant equipment'})),1)
     def test_quality_cannot_claim_unmeasured_accuracy(self):
         self.add('dob_applications',self.application());rebuild(self.conn)
         q=report(self.conn);self.assertIsNone(q['human_accuracy'])
