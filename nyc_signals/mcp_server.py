@@ -19,9 +19,10 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-from .core import DB, connect, get_state
-from .pipeline import filtered, ingest, load_projects, write_csv
+from .core import DB, classify, connect, get_state, lead_priority, now
+from .pipeline import filtered, ingest, load_projects, normalized, write_csv
 from .quality import report
+from .sources import SOURCES, query as source_query, source_record_url, window_filter
 
 
 def _refresh_needed(database, max_age_hours=24):
@@ -69,6 +70,56 @@ def refresh_if_stale(database=DB, max_age_hours=24):
         return {'refreshed': False, 'reason': 'refresh lock unavailable'}
 
 
+def live_search(query_text='', feed='all', borough='all', since='', limit=20):
+    """Query official Socrata sources directly without reading or writing the local database."""
+    limit = min(max(int(limit), 1), 50)
+    selected = SOURCES
+    if feed == 'restaurant':
+        selected = [s for s in SOURCES if s.name in ('dob_applications', 'dob_permits', 'liquor')]
+    elif feed in ('commercial', 'building'):
+        selected = [s for s in SOURCES if s.name != 'liquor']
+    per_source = max(5, (limit * 2) // max(len(selected), 1))
+    matches = []
+    errors = []
+    for source in selected:
+        where = window_filter(source, since or '1900-01-01')
+        if borough != 'all':
+            if source.name == 'liquor':
+                where += ' AND premises_county = ' + repr({'Staten Island': 'Richmond'}.get(borough, borough))
+            else:
+                where += ' AND upper(borough) = ' + repr(borough.upper())
+        try:
+            rows = source_query(source, **{'$where': where, '$order': f'{source.date_expression} DESC', '$limit': per_source})
+            for row in rows:
+                key='|'.join(str(row.get(k, '')) for k in source.id_fields).strip('|') or source.name
+                event = normalized(source, row, {'record_key': key, 'last_seen': now()})
+                classification = classify(event['description'], event['work_type'], event['building_type'], event['is_license'])
+                if feed != 'all' and feed not in classification['feeds']:
+                    continue
+                haystack=(event['address']+' '+event['description']+' '+event['job']).casefold()
+                if query_text and query_text.casefold() not in haystack:
+                    continue
+                project={'id':event['project_id'],'address':event['address'],'borough':event['borough'],
+                         'description':event['description'],'feeds':classification['feeds'],'businesses':event['businesses'],
+                         'property':None,'latest_date':event['date'],'source_names':[source.name],
+                         'events':[event],'status':event['status'],'trades':classification['trades']}
+                project.update(lead_priority(project))
+                project.update({'source_names':[source.name],'source_count':1,'events':[event],
+                                'source_url':event['source_url'],'dataset_url':event['dataset_url'],
+                                'flags':event['flags'],'reasons':classification['reasons']})
+                matches.append(project)
+        except Exception as error:
+            errors.append({'source': source.name, 'error': str(error)[:300]})
+    deduped={}
+    for project in matches:
+        existing=deduped.get(project['id'])
+        if not existing or project.get('latest_date','') > existing.get('latest_date',''):
+            deduped[project['id']]=project
+    result=sorted(deduped.values(), key=lambda p:(p.get('latest_date',''),p.get('priority_score',0)), reverse=True)
+    return {'mode':'live-api','stored_locally':False,'purpose':'Direct official API results; verify before outreach.',
+            'total':len(result),'results':result[:limit],'source_errors':errors}
+
+
 def build_server(database=DB, auto_refresh=True) -> FastMCP:
     mcp = FastMCP(
         'NYC Project Signals',
@@ -111,6 +162,17 @@ def build_server(database=DB, auto_refresh=True) -> FastMCP:
             'total': len(matches),
             'results': matches[:limit],
         }
+
+    @mcp.tool()
+    def search_live_leads(
+        query: str = '',
+        feed: str = 'all',
+        borough: str = 'all',
+        since: str = '',
+        limit: int = 20,
+    ) -> dict:
+        """Query official NYC APIs directly; results are processed in memory and not stored locally."""
+        return live_search(query, feed, borough, since, limit)
 
     @mcp.tool()
     def lead_digest(
