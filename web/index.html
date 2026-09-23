@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NYC Project Signals</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to projects</a>
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="NYC Project Signals home"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M5 30V15h7v15M16 30V5h7v25M27 30V11h5v19"/></svg><span>NYC<span class="brand-sub">Project Signals</span></span></a>
+    <p class="nav-label">Research workspace</p>
+    <nav aria-label="Project feeds" id="feeds">
+      <button class="nav-item active" data-feed="all" aria-pressed="true"><span>All projects</span><span class="nav-count" data-count="all">—</span></button>
+      <button class="nav-item" data-feed="restaurant" aria-pressed="false"><span>Restaurant activity</span><span class="nav-count" data-count="restaurant">—</span></button>
+      <button class="nav-item" data-feed="commercial" aria-pressed="false"><span>Commercial renovations</span><span class="nav-count" data-count="commercial">—</span></button>
+      <button class="nav-item" data-feed="building" aria-pressed="false"><span>Building activity</span><span class="nav-count" data-count="building">—</span></button>
+    </nav>
+    <div class="nav-divider"></div>
+    <button class="nav-item" id="saved-toggle" aria-pressed="false"><span>Saved projects</span><span class="nav-count" id="saved-count">0</span></button>
+    <button class="nav-item" id="sources-button"><span>Sources & coverage</span><span aria-hidden="true">↗</span></button>
+    <button class="nav-item" id="quality-button"><span>Quality review</span><span aria-hidden="true">↗</span></button>
+    <div class="sidebar-footer"><span class="preview-label">Research preview</span><p>Public evidence.<br>Decisions stay with you.</p><small>All five boroughs · New York City</small></div>
+  </aside>
+  <main id="main">
+    <header class="topbar"><span>Workspace <span class="slash">/</span> NYC</span><span id="source-status">Checking sources…</span></header>
+    <section class="page-intro">
+      <div><h1 id="page-title">Find the next project.</h1><p id="page-description">Explore NYC filings, understand the activity, and follow the evidence.</p></div>
+      <button id="export" class="primary"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v10m-4-4 4 4 4-4M3 13v4h14v-4"/></svg>Export CSV</button>
+    </section>
+    <div class="notice"><span class="notice-dot" aria-hidden="true"></span><p><strong>Signals for research, not confirmed leads.</strong> Filing dates and permit status do not establish opening dates or current buying intent.</p></div>
+    <section class="filters" aria-label="Filter projects">
+      <div class="search-field"><label for="search">Search projects</label><div class="input-wrap"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="m12 12 5 5"/></svg><input id="search" type="search" placeholder="Address, business, description or job number" autocomplete="off"></div></div>
+      <div><label for="borough">Borough</label><select id="borough"><option value="all">All five boroughs</option><option>Manhattan</option><option>Brooklyn</option><option>Queens</option><option>Bronx</option><option>Staten Island</option></select></div>
+      <div><label for="period">Source event date</label><select id="period"><option value="90">Last 90 days</option><option value="30">Last 30 days</option><option value="7">Last 7 days</option><option value="all">All collected dates</option></select></div>
+      <button class="quiet reset" id="reset">Reset filters</button>
+    </section>
+    <div class="workspace">
+      <section class="results" aria-label="Project results">
+        <div class="results-heading"><h2 id="results-count" aria-live="polite">Loading projects…</h2><span>Latest source event first</span></div>
+        <div id="error" class="error" hidden><p id="error-text"></p><button id="retry">Try again</button></div>
+        <div id="empty" class="empty" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 10h32v28H8zM15 18h18M15 25h12M15 32h7"/></svg><h3>No projects in this view</h3><p>Try another feed, borough or date range. If this is your first visit, run the ingestion command in the README.</p></div>
+        <div id="project-list" class="project-list" aria-busy="true"></div>
+        <div class="pagination"><button id="previous" class="quiet" disabled>Previous</button><span id="page-label"></span><button id="next" class="quiet" disabled>Next</button></div>
+      </section>
+      <aside class="detail" id="detail" aria-label="Project evidence" aria-live="polite"><div class="detail-placeholder"><h2>Every signal has a source.</h2><p>Select a project to inspect its filing history, recorded businesses, and limitations.</p></div></aside>
+    </div>
+    <section id="info-panel" class="info-panel" hidden tabindex="-1" aria-label="Coverage and quality information"><button id="close-info" class="quiet">Close panel</button><div id="info-content"></div></section>
+    <footer class="page-footer"><span>NYC Project Signals</span><span>Local research workspace · Saved projects stay in this browser</span></footer>
+  </main>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body></html>

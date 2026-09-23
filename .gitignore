@@ -1,0 +1,9 @@
+__pycache__/
+*.egg-info/
+.env
+.venv/
+data/
+exports/
+.DS_Store
+.impeccable/
+*.log

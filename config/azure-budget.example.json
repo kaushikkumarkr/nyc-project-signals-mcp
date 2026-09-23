@@ -1,0 +1,15 @@
+{
+  "billing_verified": false,
+  "credit_eligible": false,
+  "verification_reference": "",
+  "verified_at": "",
+  "expires_at": "",
+  "remaining_credit_usd": 0,
+  "pending_usage_reserve_usd": 50,
+  "max_spend_usd": 50,
+  "endpoint": "https://YOUR-RESOURCE.openai.azure.com",
+  "deployment": "YOUR-DEPLOYMENT",
+  "input_usd_per_million": 0,
+  "output_usd_per_million": 0
+}
+
