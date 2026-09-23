@@ -114,10 +114,10 @@ Configure a local MCP client to launch the command with the repository as its wo
   "mcpServers": {
     "nyc-project-signals": {
       "command": "/absolute/path/to/.venv/bin/python",
-      "args": ["-m", "nyc_signals", "--db", "data/signals.sqlite3", "mcp"]
+      "args": ["-m", "nyc_signals", "mcp", "--live-only"]
     }
   }
 }
 ```
 
-Tools are `search_live_leads`, `search_leads`, `lead_digest`, `workflow_playbook`, `get_project`, `list_sources`, `refresh_status`, `quality_status`, and `export_leads`. `search_live_leads` queries the official NYC APIs directly, processes results in memory, and returns `stored_locally: false`; use it when the MCP server should act as a live filter rather than a database. Search and export accept service categories such as Restaurant equipment, Commercial cleaning, Signage, and Building services. They return official source URLs and limitations. The cached tools refresh public sources when the local database is missing or older than 24 hours; use `--no-refresh` or `NYC_SIGNALS_NO_AUTO_REFRESH=1` to disable this. The refresh is bounded to the configured 90-day window and never calls Azure inference. The stdio server is local and free. `--transport streamable-http` is available for a hosted deployment, but do not expose it publicly without authentication, rate limiting, tenant isolation, and a terms/privacy review.
+Tools are `search_live_leads`, `search_leads`, `lead_digest`, `workflow_playbook`, `get_project`, `list_sources`, `refresh_status`, `quality_status`, and `export_leads`. `search_live_leads` queries the official NYC APIs directly, processes results in memory, and returns `stored_locally: false`; use it when the MCP server should act as a live filter rather than a database. The recommended MCP configuration uses `--live-only`, which prevents startup refreshes and local database creation; use `search_live_leads` in that mode. Search and export accept service categories such as Restaurant equipment, Commercial cleaning, Signage, and Building services. They return official source URLs and limitations. The cached tools refresh public sources when the local database is missing or older than 24 hours; use `--no-refresh` or `NYC_SIGNALS_NO_AUTO_REFRESH=1` to disable this. The refresh is bounded to the configured 90-day window and never calls Azure inference. The stdio server is local and free. `--transport streamable-http` is available for a hosted deployment, but do not expose it publicly without authentication, rate limiting, tenant isolation, and a terms/privacy review.
